@@ -1,38 +1,112 @@
+import os
+import openai
+import requests
+import json
+import streamlit as st
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
+import html2text
+
 from collections import namedtuple
 import altair as alt
 import math
 import pandas as pd
-import streamlit as st
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from PIL import Image
 
-"""
-# Welcome to Streamlit!
+# Set up OpenAI API credentials
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+# Set up Pubmed API endpoint and query parameters
+pubmed_endpoint = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+params = {
+    "db": "pubmed",
+    "retmode": "json",
+    "retmax": 5,
+    "api_key": "5cd7903972b3a715e29b76f1a15001ce9a08"
+}
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Define function to generate text using OpenAI API
+def generate_text(prompt):
+    response = openai.Completion.create(
+        engine="text-davinci-002",
+        prompt=prompt,
+        max_tokens=2024,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+    message = response.choices[0].text
+    return message
 
+# Define function to search for articles using Pubmed API
+def search_pubmed(query):
+    params["term"] = query
+    response = requests.get(pubmed_endpoint, params=params)
+    data = response.json()
+    article_ids = data["esearchresult"]["idlist"]
+    articles = [{"id": article_id, "url": f"https://pubmed.ncbi.nlm.nih.gov/{article_id}"} for article_id in article_ids]
+    return articles
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+# Define function to scrape article abstracts
+def scrape_abstract(articles):
+    abstracts = []
+    for article in articles:
+        url = article["url"]
+        html_page = urlopen(url)
+        soup = BeautifulSoup(html_page)
+        abstract = soup.find("div", {"class": "abstract-content selected"}).text
+        abstracts.append({"id": article["id"], "url": url, "abstract": abstract})
+    return abstracts
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+# Define function to convert html abstracts to text
+def convert_to_text(abstracts):
+    text_abstracts = []
+    for abstract_info in abstracts:
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        text_abstract = h.handle(abstract_info["abstract"])
+        text_abstracts.append({"id": abstract_info["id"], "url": abstract_info["url"], "abstract": text_abstract})
+    return text_abstracts
 
-    points_per_turn = total_points / num_turns
+# Get user input
+user_input = st.text_input("Hi there, I am EBPcharlie. What is your clinical question?")
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
+# Search for articles using Pubmed API
+if st.button("Search with EBPcharlie"):
+    if not user_input:
+        st.error("Please enter a clinical question to search for articles.")
+    else:
+        articles = search_pubmed(user_input)
+        st.write(f"Found {len(articles)} articles related to your clinical question.")
+        abstracts = scrape_abstract(articles)
+        text_abstracts = convert_to_text(abstracts)
 
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+        # Generate a list of PMIDs and URLs
+        pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
+
+        # Generate prompt for OpenAI API
+        prompt = f"Using your expert knowledge, analyze the following systematic reviews related to '{user_input}' published between 2021-2023:\n{pmid_url_list}\n\nPlease provide a structured analysis with the following sections:\n\n1. Summary of Findings:\n- Provide a brief summary of the main findings of these articles.\n\n2. Important Outcomes (with PMID and URL):\n- List the most important outcomes in bullet points and ensure that the PMID and URL mentioned for each outcome correspond to the correct article.\n\n3. Comparisons and Contrasts:\n- Highlight any key differences or similarities between the findings of these articles.\n\n4. Innovative Treatments or Methodologies:\n- Are there any innovative treatments or methodologies mentioned in these articles that could have significant impact on the field?\n\n5. Future Research and Unanswered Questions:\n- Briefly discuss any potential future research directions or unanswered questions based on the findings of these articles.\n\n6. Conclusion:\n- Sum up the main takeaways from these articles."
+
+        # Generate summary using OpenAI API
+        summary = generate_text(prompt)
+        st.subheader("Summary of Findings")
+        st.write(summary)
+
+        # Display article abstracts
+        st.subheader("Article Abstracts")
+        for abstract_info in text_abstracts:
+            st.write(f"PMID: {abstract_info['id']}")
+            st.write(f"URL: {abstract_info['url']}")
+            st.write(abstract_info["abstract"])
+            st.write("\n\n\n")
+
+        # Create a word cloud visualization based on the summary
+        wordcloud = WordCloud(width=800, height=800, background_color='white', colormap='viridis', max_words=100).generate(summary)
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis("off")
+        st.subheader("Word Cloud Visualization")
+        st.pyplot(plt)
+
