@@ -30,7 +30,7 @@ params = {
 # Define function to generate text using OpenAI API
 def generate_text(prompt):
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",  # Replace this with the correct GPT-4 model name when it's available
+        model="gpt-4",  # Replace this with the correct GPT-4 model name when it's available
         messages=[{"role": "system", "content": "You are a helpful assistant."},
                   {"role": "user", "content": prompt}],
         max_tokens=2024,
