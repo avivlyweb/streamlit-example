@@ -30,7 +30,7 @@ params = {
 # Define function to generate text using OpenAI API
 def generate_text(prompt):
     response = openai.Completion.create(
-        engine="text-davinci-002",
+        engine="gpt-4-32k",
         prompt=prompt,
         max_tokens=2024,
         n=1,
