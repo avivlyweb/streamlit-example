@@ -30,7 +30,7 @@ params = {
 # Define function to generate text using OpenAI API
 def generate_text(prompt):
     response = openai.ChatCompletion.create(
-        model="gpt-4",  # Replace this with the correct GPT-4 model name when it's available
+        model="gpt-4",
         messages=[{"role": "system", "content": "You are a helpful assistant."},
                   {"role": "user", "content": prompt}],
         max_tokens=2024,
@@ -39,7 +39,7 @@ def generate_text(prompt):
         temperature=0.7,
     )
 
-    return response.choices[0].text.strip()
+    return response["choices"][0]["message"]["content"].strip()
 
 # Define function to search for articles using Pubmed API
 def search_pubmed(query):
