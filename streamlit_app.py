@@ -71,22 +71,34 @@ def convert_to_text(abstracts):
         text_abstracts.append({"id": abstract_info["id"], "url": abstract_info["url"], "abstract": text_abstract})
     return text_abstracts
 
+# Initialize session state variables
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
+
+if "search_results" not in st.session_state:
+    st.session_state.search_results = None
+
+if "export_format" not in st.session_state:
+    st.session_state.export_format = ""
+
 # Get user input
-user_input = st.text_input("Hi there, I am EBPcharlie. What is your clinical question?")
+user_input = st.text_input("Hi there, I am EBPcharlie. What is your clinical question?", value=st.session_state.user_input)
+
+# Update user input in session state
+st.session_state.user_input = user_input
 
 # Search for articles using Pubmed API
 if st.button("Search with EBPcharlie"):
     if not user_input:
         st.error("Please enter a clinical question to search for articles.")
     else:
-        articles = search_pubmed(user_input)
-        st.write(f"Found {len(articles)} articles related to your clinical question.")
-        abstracts = scrape_abstract(articles)
-        text_abstracts = convert_to_text(abstracts)
+        articles = search_pubmed(user_input)    st.write(f"Found {len(articles)} articles related to your clinical question.")
+    abstracts = scrape_abstract(articles)
+    text_abstracts = convert_to_text(abstracts)
 
-        # Generate a list of PMIDs and URLs
-        pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
-        
+    # Generate a list of PMIDs and URLs
+    pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
+    
     # Generate prompt for OpenAI API
     prompt = f"Based on your expertise, please analyze the following systematic reviews related to '{user_input}', published between 2019 and 2023. The reviews are accessible via the following PMIDs and URLs: {pmid_url_list}.\n\nYour analysis should be structured and include the following sections:\n\n1. Summary of Findings: Provide a concise summary of the main findings from the articles.\n\n2. Important Outcomes (with PMID and URL): Identify the most significant outcomes, and ensure that each outcome is appropriately linked to the correct article via PMID and URL.\n\n3. Comparisons and Contrasts: Highlight any significant similarities or differences between the findings of the articles.\n\n4. Innovative Treatments or Methodologies: Identify any innovative treatments or methodologies discussed in the articles that could have a significant impact on the field.\n\n5. Future Research and Unanswered Questions: Discuss potential future research directions or unanswered questions based on the articles' findings.\n\n6. Conclusion: Summarize the primary takeaways from the articles.\n\nPlease provide a detailed analysis in accordance with the above guidelines."
 
@@ -104,7 +116,7 @@ if st.button("Search with EBPcharlie"):
         st.write("\n\n\n")
 
     # Add export functionality
-    export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"])
+    export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"], index=st.session_state.export_format)
 
     if st.button("Export Summary and Abstracts"):
         if not export_format:
@@ -138,4 +150,8 @@ if st.button("Search with EBPcharlie"):
                         out_file.write(in_file.read())
 
                 st.success("Exported to summary_and_abstracts.txt")
+                
+                            # Update export format in session state
+            st.session_state.export_format = export_format
 
+ 
