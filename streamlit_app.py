@@ -23,7 +23,7 @@ params = {
 def generate_text(prompt):
     response = openai.ChatCompletion.create(
         model="gpt-4",
-        messages=[{"role": "system", "content": "You are a helpful assistant."},
+        messages=[{"role": "system", "content": "You are an AI assistant specializing in analyzing scientific articles."},
                   {"role": "user", "content": prompt}],
         max_tokens=2024,
         n=1,
@@ -32,6 +32,7 @@ def generate_text(prompt):
     )
 
     return response["choices"][0]["message"]["content"].strip()
+
 
 # Define function to search for articles using Pubmed API
 def search_pubmed(query):
