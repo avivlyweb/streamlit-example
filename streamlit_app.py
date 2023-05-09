@@ -92,42 +92,42 @@ if st.button("Search with EBPcharlie"):
         abstracts = scrape_abstract(articles)
         text_abstracts = convert_to_text(abstracts)
 
-        # Generate a list of
-PMIDs and URLs
-pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
+                # Generate a list of PMIDs and URLs
+        pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
 
-    # Generate prompt for OpenAI API
-    prompt = f"Based on your expertise, please analyze the following systematic reviews related to '{user_input}', published between 2019 and 2023. The reviews are accessible via the following PMIDs and URLs: {pmid_url_list}.\n\nYour analysis should be structured and include the following sections:\n\n1. Summary of Findings: Provide a concise summary of the main findings from the articles.\n\n2. Important Outcomes (with PMID and URL): Identify the most significant outcomes, and ensure that each outcome is appropriately linked to the correct article via PMID and URL.\n\n3. Comparisons and Contrasts: Highlight any significant similarities or differences between the findings of the articles.\n\n4. Innovative Treatments or Methodologies: Identify any innovative treatments or methodologies discussed in the articles that could have a significant impact on the field.\n\n5. Future Research and Unanswered Questions: Discuss potential future research directions or unanswered questions based on the articles' findings.\n\n6. Conclusion: Summarize the primary takeaways from the articles.\n\nPlease provide a detailed analysis in accordance with the above guidelines."
+        # Generate prompt for OpenAI API
+        prompt = f"Based on your expertise, please analyze the following systematic reviews related to '{user_input}', published between 2019 and 2023. The reviews are accessible via the following PMIDs and URLs: {pmid_url_list}.\n\nYour analysis should be structured and include the following sections:\n\n1. Summary of Findings: Provide a concise summary of the main findings from the articles.\n\n2. Important Outcomes (with PMID and URL): Identify the most significant outcomes, and ensure that each outcome is appropriately linked to the correct article via PMID and URL.\n\n3. Comparisons and Contrasts: Highlight any significant similarities or differences between the findings of the articles.\n\n4. Innovative Treatments or Methodologies: Identify any innovative treatments or methodologies discussed in the articles that could have a significant impact on the field.\n\n5. Future Research and Unanswered Questions: Discuss potential future research directions or unanswered questions based on the articles' findings.\n\n6. Conclusion: Summarize the primary takeaways from the articles.\n\nPlease provide a detailed analysis in accordance with the above guidelines."
 
-    # Generate summary using OpenAI API
-    summary = generate_text(prompt)
-    st.subheader("Summary of Findings")
-    st.write(summary)
+        # Generate summary using OpenAI API
+        summary = generate_text(prompt)
+        st.subheader("Summary of Findings")
+        st.write(summary)
 
-    # Display article abstracts
-    st.subheader("Article Abstracts")
-    for abstract_info in text_abstracts:
-        st.write(f"PMID: {abstract_info['id']}")
-        st.write(f"URL: {abstract_info['url']}")
-        st.write(abstract_info["abstract"])
-        st.write("\n\n\n")
+        # Display article abstracts
+        st.subheader("Article Abstracts")
+        for abstract_info in text_abstracts:
+            st.write(f"PMID: {abstract_info['id']}")
+            st.write(f"URL: {abstract_info['url']}")
+            st.write(abstract_info["abstract"])
+            st.write("\n\n\n")
 
-    # Add export functionality
-    export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"])
+        # Add export functionality
+        export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"])
 
-    if st.button("Export Summary and Abstracts"):
-        if not export_format:
-            st.error("Please select an export format.")
-        else:
-            # Combine the summary and abstracts into a single string
-            combined_content = f"Summary of Findings:\n{summary}\n\nArticle Abstracts:\n"
-            for abstract_info in text_abstracts:
-                combined_content += f"\nPMID: {abstract_info['id']}\nURL: {abstract_info['url']}\n{abstract_info['abstract']}\n\n\n"
+        if st.button("Export Summary and Abstracts"):
+            if not export_format:
+                st.error("Please select an export format.")
+            else:
+                # Combine the summary and abstracts into a single string
+                combined_content = f"Summary of Findings:\n{summary}\n\nArticle Abstracts:\n"
+                for abstract_info in text_abstracts:
+                    combined_content += f"\nPMID: {abstract_info['id']}\nURL: {abstract_info['url']}\n{abstract_info['abstract']}\n\n\n"
 
-            # Export the content based on the selected format
-            if export_format == "PDF":
-                export_to_pdf("summary_and_abstracts.pdf", combined_content)
-                st.success("Exported to summary_and_abstracts.pdf")
-            elif export_format == "TXT":
-                export_to_txt("summary_and_abstracts.txt", combined_content)
-                st.success("Exported to summary_and_abstracts.txt")
+                # Export the content based on the selected format
+                if export_format == "PDF":
+                    export_to_pdf("summary_and_abstracts.pdf", combined_content)
+                    st.success("Exported to summary_and_abstracts.pdf")
+                elif export_format == "TXT":
+                    export_to_txt("summary_and_abstracts.txt", combined_content)
+                    st.success("Exported to summary_and_abstracts.txt")
+
