@@ -86,7 +86,7 @@ if st.button("Search with EBPcharlie"):
 
         # Generate a list of PMIDs and URLs
         pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
-
+        
     # Generate prompt for OpenAI API
     prompt = f"Based on your expertise, please analyze the following systematic reviews related to '{user_input}', published between 2019 and 2023. The reviews are accessible via the following PMIDs and URLs: {pmid_url_list}.\n\nYour analysis should be structured and include the following sections:\n\n1. Summary of Findings: Provide a concise summary of the main findings from the articles.\n\n2. Important Outcomes (with PMID and URL): Identify the most significant outcomes, and ensure that each outcome is appropriately linked to the correct article via PMID and URL.\n\n3. Comparisons and Contrasts: Highlight any significant similarities or differences between the findings of the articles.\n\n4. Innovative Treatments or Methodologies: Identify any innovative treatments or methodologies discussed in the articles that could have a significant impact on the field.\n\n5. Future Research and Unanswered Questions: Discuss potential future research directions or unanswered questions based on the articles' findings.\n\n6. Conclusion: Summarize the primary takeaways from the articles.\n\nPlease provide a detailed analysis in accordance with the above guidelines."
 
