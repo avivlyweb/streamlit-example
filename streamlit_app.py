@@ -6,6 +6,10 @@ import streamlit as st
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import html2text
+
+from collections import namedtuple
+import altair as alt
+import math
 import pandas as pd
 import tempfile
 import matplotlib.pyplot as plt
@@ -67,16 +71,8 @@ def convert_to_text(abstracts):
         text_abstracts.append({"id": abstract_info["id"], "url": abstract_info["url"], "abstract": text_abstract})
     return text_abstracts
 
-# Initialize session state
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""
-
-if "export_format" not in st.session_state:
-    st.session_state.export_format = ""
-
 # Get user input
-user_input = st.text_input("Hi there, I am EBPcharlie. What is your clinical question?", value=st.session_state.user_input)
-st.session_state.user_input = user_input
+user_input = st.text_input("Hi there, I am EBPcharlie. What is your clinical question?")
 
 # Search for articles using Pubmed API
 if st.button("Search with EBPcharlie"):
@@ -108,8 +104,7 @@ if st.button("Search with EBPcharlie"):
         st.write("\n\n\n")
 
     # Add export functionality
-    export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"], index=st.session_state.export_format)
-    st.session_state.export_format = export_format
+    export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"])
 
     if st.button("Export Summary and Abstracts"):
         if not export_format:
