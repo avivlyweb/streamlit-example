@@ -71,10 +71,36 @@ def convert_to_text(abstracts):
         text_abstracts.append({"id": abstract_info["id"], "url": abstract_info["url"], "abstract": text_abstract})
     return text_abstracts
 
+# SessionState class definition
+class SessionState:
+    def __init__(self, **kwargs):
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+
+    def get(self, key):
+        if key in self.__dict__:
+            return getattr(self, key)
+        else:
+            return None
+
+    def set(self, key, value):
+        setattr(self, key, value)
+
+# Function to get the session state
+def get_session_state(**kwargs):
+    session_id = str(hash(st.session_state))
+    session = st.session_state.get(session_id)
+    if session is None:
+        session = SessionState(**kwargs)
+        st.session_state[session_id] = session
+    return session
+
 # Get user input
 user_input = st.text_input("Hi there, I am EBPcharlie. What is your clinical question?")
 
 # Search for articles using Pubmed API
+session_state = get_session_state(articles=None, abstracts=None, text_abstracts=None)
+
 if st.button("Search with EBPcharlie"):
     if not user_input:
         st.error("Please enter a clinical question to search for articles.")
@@ -83,58 +109,63 @@ if st.button("Search with EBPcharlie"):
         st.write(f"Found {len(articles)} articles related to your clinical question.")
         abstracts = scrape_abstract(articles)
         text_abstracts = convert_to_text(abstracts)
+        session_state.set('articles', articles)
+        session_state.set('abstracts', abstracts)
+        session_state.set('text_abstracts', text_abstracts)
 
         # Generate a list of PMIDs and URLs
         pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
-        
-    # Generate prompt for OpenAI API
-    prompt = f"Based on your expertise, please analyze the following systematic reviews related to '{user_input}', published between 2019 and 2023. The reviews are accessible via the following PMIDs and URLs: {pmid_url_list}.\n\nYour analysis should be structured and include the following sections:\n\n1. Summary of Findings: Provide a concise summary of the main findings from the articles.\n\n2. Important Outcomes (with PMID and URL): Identify the most significant outcomes, and ensure that each outcome is appropriately linked to the correct article via PMID and URL.\n\n3. Comparisons and Contrasts: Highlight any significant similarities or differences between the findings of the articles.\n\n4. Innovative Treatments or Methodologies: Identify any innovative treatments or methodologies discussed in the articles that could have a significant impact on the field.\n\n5. Future Research and Unanswered Questions: Discuss potential future research directions or unanswered questions based on the articles' findings.\n\n6. Conclusion: Summarize the primary takeaways from the articles.\n\nPlease provide a detailed analysis in accordance with the above guidelines."
 
-    # Generate summary using OpenAI API
-    summary = generate_text(prompt)
-    st.subheader("Summary of Findings")
-    st.write(summary)
+        # Generate prompt for OpenAI API
+        prompt = f"Based on your expertise, please analyze the following systematic reviews related to '{user_input}', published between 2019 and 2023. The reviews are accessible via the following PMIDs and URLs: {pmid_url_list}.\n\nYour analysis should be structured and include the following sections:\n\n1. Summary of Findings: Provide a concise summary of the main findings from the articles.\n\n2. Important Outcomes (with PMID and URL): Identify the most significant outcomes, and ensure that each outcome is appropriately linked to the correct article via PMID and URL.\n\n3. Comparisons and Contrasts: Highlight any significant similarities or differences between the findings of the articles.\n\n4. Innovative Treatments or Methodologies: Identify any innovative treatments or methodologies discussed in the articles that could have a significant impact on the field.\n\n5. Future Research and Unanswered Questions: Discuss potential future research directions or unanswered questions based on the articles' findings.\n\n6. Conclusion: Summarize the primary takeaways from the articles.\n\nPlease provide a detailed analysis in accordance with the above guidelines."
 
-    # Display article abstracts
-    st.subheader("Article Abstracts")
-    for abstract_info in text_abstracts:
-        st.write(f"PMID: {abstract_info['id']}")
-        st.write(f"URL: {abstract_info['url']}")
-        st.write(abstract_info["abstract"])
-        st.write("\n\n\n")
+        # Generate summary using OpenAI API
+        summary = generate_text(prompt)
+        st.subheader("Summary of Findings")
+        st.write(summary)
 
-    # Add export functionality
-    export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"])
+        # Display article abstracts
+        st.subheader("Article Abstracts")
+        for abstract_info in text_abstracts:
+            st.write(f"PMID: {abstract_info['id']}")
+            st.write(f"URL: {abstract_info['url']}")
+            st.write(abstract_info["abstract"])
+            st.write("\n\n\n")
 
-    if st.button("Export Summary and Abstracts"):
-        if not export_format:
-            st.error("Please select an export format.")
-        else:
-            # Combine the summary and abstracts into a single string
-            combined_content = f"Summary of Findings:\n{summary}\n\nArticle Abstracts:\n"
-            for abstract_info in text_abstracts:
-                combined_content += f"\nPMID: {abstract_info['id']}\nURL: {abstract_info['url']}\n{abstract_info['abstract']}\n\n\n"
+        # Add export functionality
+        export_format = st.selectbox("Choose an export format:", ["", "PDF", "TXT"])
 
-            # Export the content based on the selected format
-            if export_format == "PDF":
-                with tempfile.NamedTemporaryFile(delete=False) as f:
-                    f.write(combined_content.encode("utf-8"))
-                    f.flush()
-                    pdf_path = f.name
+        if st.button("Export Summary and Abstracts"):
+            if not export_format:
+                st.error("Please select an export format.")
+            else:
+                # Combine the summary and abstracts into a single string
+                combined_content = f"Summary of Findings:\n{summary}\n\nArticle Abstracts:\n"
+                for abstract_info in text_abstracts:
+                    combined_content += f"\nPMID: {abstract_info['id']}\nURL: {abstract_info['url']}\n{abstract_info['abstract']}\n\n\n"
 
-                st.write("Exporting to PDF...")
-                pdfkit.from_file(pdf_path, "summary_and_abstracts.pdf")
-                st.success("Exported to summary_and_abstracts.pdf")
+                # Export the content based on the selected format
+                if export_format == "PDF":
+                    with tempfile.NamedTemporaryFile(delete=False) as f:
+                        f.write(combined_content.encode("utf-8"))
+                        f.flush()
+                        pdf_path = f.name
 
-            elif export_format == "TXT":
-                with tempfile.NamedTemporaryFile(delete=False) as f:
-                    f.write(combined_content.encode("utf-8"))
-                    f.flush()
-                    txt_path = f.name
+                        st.write("Exporting to PDF...")
+                        pdfkit.from_file(pdf_path, "summary_and_abstracts.pdf")
+                        st.success("Exported to summary_and_abstracts.pdf")
+               
+                elif export_format == "TXT":
+                    with tempfile.NamedTemporaryFile(delete=False) as f:
+                        f.write(combined_content.encode("utf-8"))
+                        f.flush()
+                        txt_path = f.name
 
-                st.write("Exporting to TXT...")
-                with open("summary_and_abstracts.txt", "w") as out_file:
-                    with open(txt_path, "r") as in_file:
-                        out_file.write(in_file.read())
+                    st.write("Exporting to TXT...")
+                    with open("summary_and_abstracts.txt", "w") as out_file:
+                        with open(txt_path, "r") as in_file:
+                            out_file.write(in_file.read())
 
-                st.success("Exported to summary_and_abstracts.txt")
+                    st.success("Exported to summary_and_abstracts.txt")
+
+
