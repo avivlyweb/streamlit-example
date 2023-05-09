@@ -86,7 +86,7 @@ if st.button("Search with EBPcharlie"):
         articles = search_pubmed(user_input)
         st.write(f"Found {len(articles)} articles related to your clinical question.")
         abstracts = scrape_abstract(articles)
-        text_abstracts = convert_to text_abstracts = convert_to_text(abstracts)
+        text_abstracts = convert_to_text(abstracts)
 
         # Generate a list of PMIDs and URLs
         pmid_url_list = "\n".join([f"PMID: {abstract_info['id']} URL: {abstract_info['url']}" for abstract_info in text_abstracts])
